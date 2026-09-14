@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Mon budget</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#14130f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mon budget">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%2314130f'/%3E%3Ctext x='50' y='66' font-size='54' text-anchor='middle' fill='%23D4AF6A'%3E%F0%9F%93%92%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #14130f;
+    --surface: #1c1a16;
+    --surface-2: #242019;
+    --ink: #EDE8DC;
+    --muted: #948C7C;
+    --line: #34302A;
+    --green: #7FB88F;
+    --green-bg: rgba(127,184,143,0.14);
+    --red: #D98C7A;
+    --red-bg: rgba(217,140,122,0.14);
+    --gold: #D4AF6A;
+    --gold-bg: rgba(212,175,106,0.14);
+    --btn-ink: #1a1710;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app { max-width: 480px; margin: 0 auto; padding: 16px 14px 40px; }
+  h1 { font-size: 19px; margin: 0 0 2px; }
+  .save-status { font-size: 11px; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
+
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .month-nav button {
+    background: none; border: 1px solid var(--line); border-radius: 6px;
+    font-family: Georgia, serif; font-size: 15px; padding: 6px 12px; cursor: pointer; color: var(--ink);
+  }
+  .month-label { font-size: 16px; font-weight: 600; text-transform: capitalize; }
+  .month-picker {
+    font-family: Georgia, serif; font-size: 16px; font-weight: 600; text-transform: capitalize;
+    background: none; border: none; color: var(--ink); text-align: center;
+    -webkit-appearance: none; appearance: none; padding: 4px 2px; cursor: pointer;
+  }
+  .month-picker::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
+
+  .totals { display: flex; gap: 8px; margin-bottom: 16px; }
+  .total-card { flex: 1; border-radius: 8px; padding: 10px 12px; }
+  .total-card .lbl { font-size: 11px; color: var(--muted); display: block; margin-bottom: 2px; }
+  .total-card .val { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 15px; font-weight: 700; }
+  .total-card.income { background: var(--green-bg); }
+  .total-card.expense { background: var(--red-bg); }
+  .total-card.net { background: var(--gold-bg); border: 1px solid var(--gold); }
+
+  .copy-btn {
+    width: 100%; padding: 9px; margin-bottom: 18px; border-radius: 7px;
+    border: 1px dashed var(--muted); background: none; color: var(--muted);
+    font-family: Georgia, serif; font-size: 13px; cursor: pointer;
+  }
+  .copy-btn:active { background: var(--line); }
+
+  .section-title {
+    font-size: 12px; letter-spacing: .03em; font-weight: 600;
+    border-bottom: 2px solid; padding-bottom: 4px; margin: 18px 0 6px;
+  }
+  .section-title.income { color: var(--green); border-color: var(--green); }
+  .section-title.expense { color: var(--red); border-color: var(--red); }
+
+  .txn-row {
+    display: grid; grid-template-columns: 22px 1fr auto 26px;
+    align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line);
+  }
+  .txn-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--green); }
+  .txn-main { min-width: 0; }
+  .txn-label { font-size: 14.5px; line-height: 1.25; }
+  .txn-label.unpaid { color: var(--muted); }
+  .txn-cat { font-size: 11px; color: var(--muted); }
+  .txn-comment { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 1px; }
+  .txn-amount { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 14.5px; white-space: nowrap; }
+  .txn-amount.income { color: var(--green); }
+  .txn-amount.expense { color: var(--red); }
+  .txn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 4px; }
+  .txn-del:active { color: var(--red); }
+  .empty { font-size: 13px; color: var(--muted); padding: 10px 0; font-style: italic; }
+  .day-header {
+    font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+    padding: 10px 0 3px; opacity: .75;
+  }
+  .day-header:first-child { padding-top: 2px; }
+
+  .add-box {
+    margin-top: 22px; padding: 14px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; position: relative;
+  }
+  .add-box h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+  .type-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
+  .type-toggle button {
+    flex: 1; padding: 7px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--surface-2); font-family: Georgia, serif; font-size: 13px; cursor: pointer; color: var(--muted);
+  }
+  .type-toggle button.active.expense { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+  .type-toggle button.active.income { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+
+  .field { position: relative; margin-bottom: 8px; }
+  .field input {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: Georgia, serif; font-size: 14.5px; background: var(--surface-2); color: var(--ink);
+  }
+  .field input:focus { outline: none; border-color: var(--gold); }
+  .row2 { display: flex; gap: 8px; }
+  .row2 .field { flex: 1; }
+
+  .suggestions {
+    position: absolute; top: 100%; left: 0; right: 0; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 6px; z-index: 5; max-height: 160px; overflow-y: auto;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  }
+  .suggestion-item { padding: 8px 10px; font-size: 13.5px; cursor: pointer; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:active { background: var(--line); }
+  .suggestion-item .s-cat { color: var(--muted); font-size: 11px; }
+
+  .add-submit {
+    width: 100%; padding: 10px; border-radius: 7px; border: none; margin-top: 4px;
+    background: var(--gold); color: var(--btn-ink); font-family: Georgia, serif; font-size: 14px; cursor: pointer; font-weight: 600;
+  }
+  .add-submit:active { opacity: .85; }
+
+  .footer-tools { margin-top: 26px; display: flex; gap: 8px; }
+  .footer-tools button {
+    flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: none;
+    font-family: Georgia, serif; font-size: 12px; color: var(--muted); cursor: pointer;
+  }
+  #importFile { display: none; }
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-2); color: var(--ink); padding: 9px 16px; border-radius: 20px;
+    border: 1px solid var(--line); font-family: Georgia, serif; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  }
+  .toast.show { opacity: 1; }
+
+  .notes-section { margin-top: 28px; }
+  .notes-toggle {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    background: none; border: none; padding: 8px 0; cursor: pointer;
+    font-family: Georgia, serif; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line);
+  }
+  .notes-toggle .chev { transition: transform .2s; }
+  .notes-toggle.open .chev { transform: rotate(90deg); }
+  .notes-body { display: none; }
+  .notes-body.open { display: block; }
+  .notes-hint { font-size: 11.5px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
+  .note-row {
+    display: grid; grid-template-columns: 1fr auto 26px;
+    align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);
+  }
+  .note-amount.income { color: var(--green); font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 14px; }
+  .note-amount.expense { color: var(--red); font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 14px; }
+  .note-label { font-size: 14px; }
+
+  .list-picker-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .list-select {
+    flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: Georgia, serif; font-size: 14px; background: var(--surface-2); color: var(--ink);
+  }
+  .new-list-btn {
+    flex: 0 0 auto; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--gold);
+    background: var(--gold-bg); color: var(--gold); font-family: Georgia, serif; font-size: 13px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .search-field { margin-bottom: 12px; }
+  .search-field input { font-size: 14px; }
+  .search-result-row {
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+    padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+  }
+  .search-result-row:active { background: var(--surface-2); }
+  .search-result-main { min-width: 0; }
+  .search-result-label { font-size: 14px; }
+  .search-result-list { font-size: 11px; color: var(--muted); }
+  .search-result-amount { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-size: 14px; white-space: nowrap; }
+  .new-list-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .new-list-row input {
+    flex: 1; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: Georgia, serif; font-size: 14px; background: var(--surface-2); color: var(--ink);
+  }
+  .new-list-row button {
+    padding: 8px 14px; border-radius: 6px; border: none; background: var(--gold); color: var(--btn-ink);
+    font-family: Georgia, serif; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .delete-list-btn {
+    width: 100%; margin-top: 10px; padding: 8px; background: none; border: none;
+    color: var(--muted); font-family: Georgia, serif; font-size: 12px; cursor: pointer; text-align: center;
+  }
+  .delete-list-btn.confirm { color: var(--red); font-weight: 600; }
+
+  .drive-section { margin-top: 24px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .drive-title { color: var(--muted); border-color: var(--line); margin-top: 0; }
+  .drive-status { font-size: 12px; color: var(--muted); margin: 6px 0 10px; }
+  .drive-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .drive-actions button { flex: 1; }
+  .drive-save { background: var(--green); }
+  .drive-restore { background: var(--muted); }
+  .add-submit:disabled { opacity: .45; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Mon budget</h1>
+  <div class="save-status"><span class="save-dot"></span><span id="saveStatus">chargement…</span></div>
+
+  <div class="month-nav">
+    <button id="prevMonth">‹</button>
+    <input type="month" id="monthPicker" class="month-picker">
+    <button id="nextMonth">›</button>
+  </div>
+
+  <div class="field search-field">
+    <input type="text" id="txnSearchInput" placeholder="🔍 Rechercher dans toutes les transactions…">
+  </div>
+  <div id="txnSearchResults"></div>
+
+  <div id="monthlyContent">
+    <div class="totals">
+      <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="totalIncome">0 CHF</span></div>
+      <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="totalExpense">0 CHF</span></div>
+      <div class="total-card net"><span class="lbl">Reste</span><span class="val" id="totalNet">0 CHF</span></div>
+    </div>
+
+    <button class="copy-btn" id="copyPrevMonth">↻ Copier les entrées du mois précédent (non payées)</button>
+
+    <div class="section-title income">Revenus</div>
+    <div id="incomeList"></div>
+
+    <div class="section-title expense">Dépenses</div>
+    <div id="expenseList"></div>
+  </div>
+
+  <div class="add-box">
+    <h2>Nouvelle entrée</h2>
+    <div class="type-toggle">
+      <button id="typeExpenseBtn" class="expense active">Dépense</button>
+      <button id="typeIncomeBtn" class="income">Revenu</button>
+    </div>
+    <div class="field">
+      <input type="text" id="labelInput" placeholder="Intitulé (ex: Loyer)" autocomplete="off">
+      <div class="suggestions" id="suggestions" style="display:none;"></div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <input type="number" id="amountInput" placeholder="Montant" inputmode="decimal">
+      </div>
+      <div class="field">
+        <input type="text" id="categoryInput" placeholder="Catégorie">
+      </div>
+    </div>
+    <div class="field">
+      <input type="date" id="dateInput">
+    </div>
+    <div class="field">
+      <input type="text" id="commentInput" placeholder="Commentaire (optionnel)">
+    </div>
+    <button class="add-submit" id="addBtn">Ajouter</button>
+  </div>
+
+  <div class="footer-tools">
+    <button id="exportBtn">Exporter (backup)</button>
+    <button id="importBtn">Importer</button>
+    <input type="file" id="importFile" accept="application/json">
+  </div>
+
+  <div class="drive-section">
+    <div class="section-title drive-title">☁️ Synchronisation Google Drive</div>
+    <div class="notes-hint">Ne fonctionne qu'une fois l'appli hébergée sur ton propre domaine (GitHub Pages) — pas dans cet aperçu Claude.</div>
+    <div id="driveStatus" class="drive-status">Non connecté</div>
+    <button class="copy-btn" id="driveConnectBtn">Connecter Google Drive</button>
+    <div class="drive-actions">
+      <button class="add-submit drive-save" id="driveSaveBtn" disabled>Sauvegarder</button>
+      <button class="add-submit drive-restore" id="driveRestoreBtn" disabled>Restaurer</button>
+    </div>
+  </div>
+
+  <div class="notes-section">
+    <button class="notes-toggle" id="notesToggle">
+      <span>📝 Listes de notes (hors budget mensuel)</span>
+      <span class="chev">›</span>
+    </button>
+    <div class="notes-body" id="notesBody">
+      <div class="notes-hint">Chaque liste est indépendante et n'est jamais comptée dans le budget mensuel — utile pour un projet, un événement, un suivi ponctuel.</div>
+
+      <div class="list-picker-row">
+        <select id="listSelect" class="list-select"></select>
+        <button id="newListToggleBtn" class="new-list-btn">+ Nouvelle liste</button>
+      </div>
+      <div class="new-list-row" id="newListRow" style="display:none;">
+        <input type="text" id="newListNameInput" placeholder="Nom de la liste (ex: Voyage Japon)">
+        <button id="createListBtn">Créer</button>
+      </div>
+
+      <div class="field search-field">
+        <input type="text" id="notesSearchInput" placeholder="🔍 Rechercher dans toutes les listes…">
+      </div>
+
+      <div id="activeListContent">
+        <div class="totals" id="notesTotals">
+          <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="notesTotalIncome">0 CHF</span></div>
+          <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="notesTotalExpense">0 CHF</span></div>
+          <div class="total-card net"><span class="lbl">Solde</span><span class="val" id="notesTotalNet">0 CHF</span></div>
+        </div>
+        <div id="notesList"></div>
+        <div class="row2" style="margin-top:10px;">
+          <div class="field"><input type="text" id="noteLabelInput" placeholder="Intitulé"></div>
+          <div class="field" style="max-width:110px;"><input type="number" id="noteAmountInput" placeholder="Montant" inputmode="decimal"></div>
+        </div>
+        <div class="type-toggle">
+          <button id="noteTypeExpenseBtn" class="expense active">Dépense</button>
+          <button id="noteTypeIncomeBtn" class="income">Revenu</button>
+        </div>
+        <button class="add-submit" id="noteAddBtn">Ajouter à cette liste</button>
+        <button class="delete-list-btn" id="deleteListBtn">🗑 Supprimer cette liste</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const STORAGE_KEY = "bluecoins-lite:v1";
+let data = { transactions: [], noteLists: [] };
+let currentMonth = new Date(); currentMonth.setDate(1);
+let currentType = "expense";
+let currentNoteType = "expense";
+let currentListId = null;
+
+const $ = (id) => document.getElementById(id);
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function fmt(n) {
+  const v = Number.isFinite(n) ? n : 0;
+  return v.toLocaleString("fr-CH", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " CHF";
+}
+
+function monthKey(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+
+function monthLabelStr(d) {
+  return d.toLocaleDateString("fr-CH", { month: "long", year: "numeric" });
+}
+
+// --- Couche de stockage : window.storage dans Claude, localStorage une fois hébergé ailleurs ---
+const hasClaudeStorage = typeof window.storage !== "undefined" && window.storage;
+
+async function storageGet(key) {
+  if (hasClaudeStorage) {
+    try {
+      const res = await window.storage.get(key, false);
+      return res ? res.value : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  return localStorage.getItem(key);
+}
+
+async function storageSet(key, value) {
+  if (hasClaudeStorage) {
+    await window.storage.set(key, value, false);
+  } else {
+    localStorage.setItem(key, value);
+  }
+}
+
+async function load() {
+  try {
+    const raw = await storageGet(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.transactions)) {
+        data = parsed;
+        if (!Array.isArray(data.noteLists)) {
+          // migrate from old single-list format
+          data.noteLists = [{ id: uid(), name: "Général", notes: Array.isArray(data.notes) ? data.notes : [] }];
+        }
+        delete data.notes;
+      }
+    }
+    setSaveStatus(hasClaudeStorage ? "chargé" : "chargé (stockage local du téléphone)");
+  } catch (e) {
+    setSaveStatus("nouveau carnet");
+  }
+  if (!Array.isArray(data.noteLists) || data.noteLists.length === 0) {
+    data.noteLists = [{ id: uid(), name: "Général", notes: [] }];
+  }
+  currentListId = data.noteLists[0].id;
+  render();
+}
+
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  setSaveStatus("enregistrement…");
+  saveTimer = setTimeout(async () => {
+    try {
+      await storageSet(STORAGE_KEY, JSON.stringify(data));
+      setSaveStatus("enregistré à " + new Date().toLocaleTimeString("fr-CH", { hour: "2-digit", minute: "2-digit" }));
+    } catch (e) {
+      setSaveStatus("⚠ échec d'enregistrement — pense à exporter");
+    }
+  }, 250);
+}
+
+function setSaveStatus(txt) { $("saveStatus").textContent = txt; }
+
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function txnsForMonth(d) {
+  const key = monthKey(d);
+  return data.transactions.filter(t => t.date.slice(0, 7) === key);
+}
+
+function render() {
+  $("monthPicker").value = monthKey(currentMonth);
+  const txns = txnsForMonth(currentMonth).sort((a, b) => a.date.localeCompare(b.date));
+  const incomes = txns.filter(t => t.type === "income");
+  const expenses = txns.filter(t => t.type === "expense");
+
+  const totalIncome = incomes.reduce((s, t) => s + t.amount, 0);
+  const totalExpense = expenses.reduce((s, t) => s + t.amount, 0);
+  $("totalIncome").textContent = fmt(totalIncome);
+  $("totalExpense").textContent = fmt(totalExpense);
+  $("totalNet").textContent = fmt(totalIncome - totalExpense);
+
+  renderList("incomeList", incomes, "income");
+  renderList("expenseList", expenses, "expense");
+
+  const d = $("dateInput");
+  if (!d.value || d.value.slice(0,7) !== monthKey(currentMonth)) {
+    const today = new Date();
+    if (monthKey(today) === monthKey(currentMonth)) {
+      d.value = today.toISOString().slice(0,10);
+    } else {
+      d.value = currentMonth.toISOString().slice(0,10);
+    }
+  }
+}
+
+function dayHeaderStr(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("fr-CH", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function renderList(elId, list, type) {
+  const el = $(elId);
+  el.innerHTML = "";
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty">Aucune entrée ce mois-ci.</div>';
+    return;
+  }
+  let lastDate = null;
+  for (const t of list) {
+    if (t.date !== lastDate) {
+      const header = document.createElement("div");
+      header.className = "day-header";
+      header.textContent = dayHeaderStr(t.date);
+      el.appendChild(header);
+      lastDate = t.date;
+    }
+    const row = document.createElement("div");
+    row.className = "txn-row";
+    row.innerHTML = `
+      <input type="checkbox" ${t.paid ? "checked" : ""} title="Payé / reçu">
+      <div class="txn-main">
+        <div class="txn-label ${t.paid ? "" : "unpaid"}">${escapeHtml(t.label)}</div>
+        ${t.category ? `<div class="txn-cat">${escapeHtml(t.category)}</div>` : ""}
+        ${t.comment ? `<div class="txn-comment">${escapeHtml(t.comment)}</div>` : ""}
+      </div>
+      <div class="txn-amount ${type}">${type === "income" ? "+" : "−"}${fmt(t.amount)}</div>
+      <button class="txn-del">✕</button>
+    `;
+    row.querySelector("input[type=checkbox]").addEventListener("change", (e) => {
+      t.paid = e.target.checked;
+      save();
+      render();
+    });
+    row.querySelector(".txn-del").addEventListener("click", () => {
+      data.transactions = data.transactions.filter(x => x.id !== t.id);
+      save();
+      render();
+    });
+    el.appendChild(row);
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function renderTxnSearchResults(query) {
+  const q = query.trim().toLowerCase();
+  const monthlyEl = $("monthlyContent");
+  const resultsEl = $("txnSearchResults");
+  if (!q) {
+    monthlyEl.style.display = "block";
+    resultsEl.innerHTML = "";
+    return;
+  }
+  monthlyEl.style.display = "none";
+  const matches = data.transactions
+    .filter(t => t.label.toLowerCase().includes(q) || (t.category && t.category.toLowerCase().includes(q)) || (t.comment && t.comment.toLowerCase().includes(q)))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  resultsEl.innerHTML = "";
+  if (matches.length === 0) {
+    resultsEl.innerHTML = '<div class="empty">Aucun résultat.</div>';
+    return;
+  }
+  for (const t of matches) {
+    const d = new Date(t.date + "T00:00:00");
+    const row = document.createElement("div");
+    row.className = "search-result-row";
+    row.innerHTML = `
+      <div class="search-result-main">
+        <div class="search-result-label">${escapeHtml(t.label)}${t.category ? ` · ${escapeHtml(t.category)}` : ""}</div>
+        <div class="search-result-list">${monthLabelStr(d)}${t.paid ? " · payé" : " · non payé"}</div>
+      </div>
+      <div class="search-result-amount" style="color:${t.type === "income" ? "var(--green)" : "var(--red)"}">
+        ${t.type === "income" ? "+" : "−"}${fmt(t.amount)}
+      </div>
+    `;
+    row.addEventListener("click", () => {
+      currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+      $("txnSearchInput").value = "";
+      $("monthlyContent").style.display = "block";
+      $("txnSearchResults").innerHTML = "";
+      render();
+    });
+    resultsEl.appendChild(row);
+  }
+}
+
+$("txnSearchInput").addEventListener("input", (e) => renderTxnSearchResults(e.target.value));
+
+$("prevMonth").addEventListener("click", () => {
+  currentMonth.setMonth(currentMonth.getMonth() - 1);
+  currentMonth = new Date(currentMonth);
+  render();
+});
+$("nextMonth").addEventListener("click", () => {
+  currentMonth.setMonth(currentMonth.getMonth() + 1);
+  currentMonth = new Date(currentMonth);
+  render();
+});
+
+$("monthPicker").addEventListener("change", (e) => {
+  const [y, m] = e.target.value.split("-").map(Number);
+  if (y && m) {
+    currentMonth = new Date(y, m - 1, 1);
+    render();
+  }
+});
+
+$("typeExpenseBtn").addEventListener("click", () => setType("expense"));
+$("typeIncomeBtn").addEventListener("click", () => setType("income"));
+function setType(t) {
+  currentType = t;
+  $("typeExpenseBtn").classList.toggle("active", t === "expense");
+  $("typeIncomeBtn").classList.toggle("active", t === "income");
+}
+
+// Autocomplete
+$("labelInput").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const sugg = $("suggestions");
+  if (!q) { sugg.style.display = "none"; return; }
+  const seen = new Set();
+  const matches = [];
+  for (const t of [...data.transactions].sort((a,b) => b.date.localeCompare(a.date))) {
+    const key = t.label.toLowerCase();
+    if (key.includes(q) && !seen.has(key)) {
+      seen.add(key);
+      matches.push(t);
+    }
+    if (matches.length >= 6) break;
+  }
+  if (matches.length === 0) { sugg.style.display = "none"; return; }
+  sugg.innerHTML = "";
+  for (const m of matches) {
+    const item = document.createElement("div");
+    item.className = "suggestion-item";
+    item.innerHTML = `<span>${escapeHtml(m.label)}</span><span class="s-cat">${escapeHtml(m.category || "")} · ${fmt(m.amount)}</span>`;
+    item.addEventListener("click", () => {
+      $("labelInput").value = m.label;
+      $("amountInput").value = m.amount;
+      $("categoryInput").value = m.category || "";
+      $("commentInput").value = m.comment || "";
+      setType(m.type);
+      sugg.style.display = "none";
+    });
+    sugg.appendChild(item);
+  }
+  sugg.style.display = "block";
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".field")) $("suggestions").style.display = "none";
+});
+
+$("addBtn").addEventListener("click", () => {
+  const label = $("labelInput").value.trim();
+  const amount = parseFloat($("amountInput").value);
+  const category = $("categoryInput").value.trim();
+  const date = $("dateInput").value || new Date().toISOString().slice(0,10);
+  const comment = $("commentInput").value.trim();
+  if (!label || !amount || amount <= 0) {
+    showToast("Intitulé et montant requis");
+    return;
+  }
+  data.transactions.push({
+    id: uid(), label, amount, category, date, comment, type: currentType, paid: false
+  });
+  $("labelInput").value = "";
+  $("amountInput").value = "";
+  $("categoryInput").value = "";
+  $("commentInput").value = "";
+  save();
+  render();
+  showToast("Ajouté");
+});
+
+$("copyPrevMonth").addEventListener("click", () => {
+  const prev = new Date(currentMonth);
+  prev.setMonth(prev.getMonth() - 1);
+  const prevTxns = txnsForMonth(prev);
+  if (prevTxns.length === 0) {
+    showToast("Rien à copier depuis le mois précédent");
+    return;
+  }
+  const daysInCurrent = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+  for (const t of prevTxns) {
+    const day = Math.min(parseInt(t.date.slice(8, 10), 10), daysInCurrent);
+    const newDate = currentMonth.getFullYear() + "-" + String(currentMonth.getMonth() + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+    data.transactions.push({
+      id: uid(), label: t.label, amount: t.amount, category: t.category, comment: t.comment, date: newDate, type: t.type, paid: false
+    });
+  }
+  save();
+  render();
+  showToast(prevTxns.length + " entrée(s) copiée(s)");
+});
+
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mon-budget-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast("Export téléchargé");
+});
+
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (Array.isArray(parsed.transactions)) {
+        data = parsed;
+        if (!Array.isArray(data.noteLists)) {
+          data.noteLists = [{ id: uid(), name: "Général", notes: Array.isArray(data.notes) ? data.notes : [] }];
+        }
+        delete data.notes;
+        if (data.noteLists.length === 0) {
+          data.noteLists = [{ id: uid(), name: "Général", notes: [] }];
+        }
+        currentListId = data.noteLists[0].id;
+        save();
+        render();
+        renderListSelect();
+        renderNotes();
+        showToast("Import réussi");
+      } else {
+        showToast("Fichier invalide");
+      }
+    } catch (err) {
+      showToast("Fichier invalide");
+    }
+  };
+  reader.readAsText(file);
+});
+
+function getActiveList() {
+  return data.noteLists.find(l => l.id === currentListId) || data.noteLists[0];
+}
+
+function renderListSelect() {
+  const sel = $("listSelect");
+  sel.innerHTML = "";
+  for (const list of data.noteLists) {
+    const opt = document.createElement("option");
+    opt.value = list.id;
+    opt.textContent = list.name;
+    if (list.id === currentListId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+$("listSelect").addEventListener("change", (e) => {
+  currentListId = e.target.value;
+  $("newListRow").style.display = "none";
+  renderNotes();
+});
+
+$("newListToggleBtn").addEventListener("click", () => {
+  const row = $("newListRow");
+  row.style.display = row.style.display === "none" ? "flex" : "none";
+  $("newListNameInput").focus();
+});
+
+$("createListBtn").addEventListener("click", () => {
+  const name = $("newListNameInput").value.trim();
+  if (!name) { showToast("Donne un nom à la liste"); return; }
+  const newList = { id: uid(), name, notes: [] };
+  data.noteLists.push(newList);
+  currentListId = newList.id;
+  $("newListNameInput").value = "";
+  $("newListRow").style.display = "none";
+  save();
+  renderListSelect();
+  renderNotes();
+  showToast("Liste créée");
+});
+
+let deleteConfirmArmed = false;
+$("deleteListBtn").addEventListener("click", () => {
+  if (data.noteLists.length <= 1) {
+    showToast("Impossible de supprimer la dernière liste");
+    return;
+  }
+  if (!deleteConfirmArmed) {
+    deleteConfirmArmed = true;
+    $("deleteListBtn").textContent = "Confirmer la suppression ?";
+    $("deleteListBtn").classList.add("confirm");
+    setTimeout(() => {
+      deleteConfirmArmed = false;
+      $("deleteListBtn").textContent = "🗑 Supprimer cette liste";
+      $("deleteListBtn").classList.remove("confirm");
+    }, 3000);
+    return;
+  }
+  data.noteLists = data.noteLists.filter(l => l.id !== currentListId);
+  currentListId = data.noteLists[0].id;
+  deleteConfirmArmed = false;
+  $("deleteListBtn").textContent = "🗑 Supprimer cette liste";
+  $("deleteListBtn").classList.remove("confirm");
+  save();
+  renderListSelect();
+  renderNotes();
+  showToast("Liste supprimée");
+});
+
+function renderNotes() {
+  const list = getActiveList();
+  const notes = list ? list.notes : [];
+  const incomeTotal = notes.filter(n => n.type === "income").reduce((s, n) => s + n.amount, 0);
+  const expenseTotal = notes.filter(n => n.type === "expense").reduce((s, n) => s + n.amount, 0);
+  $("notesTotalIncome").textContent = fmt(incomeTotal);
+  $("notesTotalExpense").textContent = fmt(expenseTotal);
+  $("notesTotalNet").textContent = fmt(incomeTotal - expenseTotal);
+
+  const el = $("notesList");
+  el.innerHTML = "";
+  if (notes.length === 0) {
+    el.innerHTML = '<div class="empty">Aucune note dans cette liste.</div>';
+    return;
+  }
+  for (const n of notes) {
+    const row = document.createElement("div");
+    row.className = "note-row";
+    row.innerHTML = `
+      <div class="note-label">${escapeHtml(n.label)}</div>
+      <div class="note-amount ${n.type}">${n.type === "income" ? "+" : "−"}${fmt(n.amount)}</div>
+      <button class="txn-del">✕</button>
+    `;
+    row.querySelector(".txn-del").addEventListener("click", () => {
+      list.notes = list.notes.filter(x => x.id !== n.id);
+      save();
+      renderNotes();
+    });
+    el.appendChild(row);
+  }
+}
+
+function renderSearchResults(query) {
+  const q = query.trim().toLowerCase();
+  const el = $("notesList");
+  $("notesTotals").style.display = "none";
+  el.innerHTML = "";
+  if (!q) return;
+
+  const matches = [];
+  for (const list of data.noteLists) {
+    for (const n of list.notes) {
+      if (n.label.toLowerCase().includes(q)) matches.push({ note: n, list });
+    }
+  }
+  if (matches.length === 0) {
+    el.innerHTML = '<div class="empty">Aucun résultat dans aucune liste.</div>';
+    return;
+  }
+  for (const { note: n, list } of matches) {
+    const row = document.createElement("div");
+    row.className = "search-result-row";
+    row.innerHTML = `
+      <div class="search-result-main">
+        <div class="search-result-label">${escapeHtml(n.label)}</div>
+        <div class="search-result-list">${escapeHtml(list.name)}</div>
+      </div>
+      <div class="search-result-amount ${n.type === "income" ? "" : ""}" style="color:${n.type === "income" ? "var(--green)" : "var(--red)"}">
+        ${n.type === "income" ? "+" : "−"}${fmt(n.amount)}
+      </div>
+    `;
+    row.addEventListener("click", () => {
+      currentListId = list.id;
+      $("notesSearchInput").value = "";
+      $("notesTotals").style.display = "flex";
+      renderListSelect();
+      renderNotes();
+    });
+    el.appendChild(row);
+  }
+}
+
+$("notesSearchInput").addEventListener("input", (e) => {
+  const q = e.target.value;
+  if (q.trim()) {
+    renderSearchResults(q);
+  } else {
+    $("notesTotals").style.display = "flex";
+    renderNotes();
+  }
+});
+
+$("notesToggle").addEventListener("click", () => {
+  $("notesToggle").classList.toggle("open");
+  $("notesBody").classList.toggle("open");
+});
+
+$("noteTypeExpenseBtn").addEventListener("click", () => setNoteType("expense"));
+$("noteTypeIncomeBtn").addEventListener("click", () => setNoteType("income"));
+function setNoteType(t) {
+  currentNoteType = t;
+  $("noteTypeExpenseBtn").classList.toggle("active", t === "expense");
+  $("noteTypeIncomeBtn").classList.toggle("active", t === "income");
+}
+
+$("noteAddBtn").addEventListener("click", () => {
+  const label = $("noteLabelInput").value.trim();
+  const amount = parseFloat($("noteAmountInput").value);
+  if (!label || !amount || amount <= 0) {
+    showToast("Intitulé et montant requis");
+    return;
+  }
+  const list = getActiveList();
+  list.notes.push({ id: uid(), label, amount, type: currentNoteType });
+  $("noteLabelInput").value = "";
+  $("noteAmountInput").value = "";
+  save();
+  renderNotes();
+  showToast("Ajouté");
+});
+
+// --- Synchronisation Google Drive ---
+// À configurer une fois l'appli hébergée sur ton propre domaine (GitHub Pages) :
+// remplace la valeur ci-dessous par ton propre Client ID OAuth (console.cloud.google.com).
+const DRIVE_CLIENT_ID = "REMPLACE_PAR_TON_CLIENT_ID.apps.googleusercontent.com";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const DRIVE_FILE_NAME = "mon-budget-backup.json";
+let driveAccessToken = null;
+let driveTokenClient = null;
+let driveFileId = null;
+
+function initDrive() {
+  if (DRIVE_CLIENT_ID.startsWith("REMPLACE")) {
+    $("driveStatus").textContent = "Non configuré (renseigne ton Client ID dans le code)";
+    return;
+  }
+  if (typeof google === "undefined" || !google.accounts) {
+    $("driveStatus").textContent = "Indisponible dans cet aperçu — teste depuis la version hébergée";
+    return;
+  }
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: DRIVE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: (resp) => {
+      if (resp && resp.access_token) {
+        driveAccessToken = resp.access_token;
+        $("driveStatus").textContent = "Connecté ✓";
+        $("driveSaveBtn").disabled = false;
+        $("driveRestoreBtn").disabled = false;
+      }
+    }
+  });
+  $("driveStatus").textContent = "Prêt — clique pour te connecter";
+}
+
+$("driveConnectBtn").addEventListener("click", () => {
+  if (!driveTokenClient) { showToast("Google Drive indisponible ici"); return; }
+  driveTokenClient.requestAccessToken();
+});
+
+async function driveFindFile() {
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {
+    headers: { Authorization: "Bearer " + driveAccessToken }
+  });
+  const json = await res.json();
+  return (json.files && json.files[0]) ? json.files[0].id : null;
+}
+
+$("driveSaveBtn").addEventListener("click", async () => {
+  try {
+    if (!driveFileId) driveFileId = await driveFindFile();
+    const content = JSON.stringify(data, null, 2);
+    if (driveFileId) {
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        method: "PATCH",
+        headers: { Authorization: "Bearer " + driveAccessToken, "Content-Type": "application/json" },
+        body: content
+      });
+    } else {
+      const boundary = "-----budgetboundary" + uid();
+      const metadata = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
+      const body =
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`;
+      const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + driveAccessToken, "Content-Type": `multipart/related; boundary=${boundary}` },
+        body
+      });
+      const json = await res.json();
+      driveFileId = json.id;
+    }
+    showToast("Sauvegardé sur Drive");
+  } catch (e) {
+    showToast("Échec de la sauvegarde Drive");
+  }
+});
+
+$("driveRestoreBtn").addEventListener("click", async () => {
+  try {
+    if (!driveFileId) driveFileId = await driveFindFile();
+    if (!driveFileId) { showToast("Aucune sauvegarde trouvée sur Drive"); return; }
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+      headers: { Authorization: "Bearer " + driveAccessToken }
+    });
+    const parsed = await res.json();
+    if (Array.isArray(parsed.transactions)) {
+      data = parsed;
+      if (!Array.isArray(data.noteLists) || data.noteLists.length === 0) {
+        data.noteLists = [{ id: uid(), name: "Général", notes: [] }];
+      }
+      currentListId = data.noteLists[0].id;
+      save();
+      render();
+      renderListSelect();
+      renderNotes();
+      showToast("Restauré depuis Drive");
+    } else {
+      showToast("Fichier Drive invalide");
+    }
+  } catch (e) {
+    showToast("Échec de la restauration");
+  }
+});
+
+window.addEventListener("load", () => setTimeout(initDrive, 400));
+
+load().then(() => { renderListSelect(); renderNotes(); });
+</script>
+</body>
+</html>

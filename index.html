@@ -336,6 +336,13 @@
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+<script>
 const STORAGE_KEY = "bluecoins-lite:v1";
 let data = { transactions: [], noteLists: [] };
 let currentMonth = new Date(); currentMonth.setDate(1);

@@ -1,4 +1,4 @@
-const CACHE_NAME = "mon-budget-v1";
+const CACHE_NAME = "mon-budget-v2";
 const CORE_ASSETS = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -17,17 +17,11 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Cache-first for the app shell, network-first (with cache fallback) for everything else.
+// Network-first: toujours essayer la version en ligne d'abord, pour que les mises à jour
+// s'appliquent dès la prochaine ouverture avec réseau. Le cache ne sert que hors-ligne.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-
-  if (CORE_ASSETS.some((a) => req.url.endsWith(a.replace("./", "")))) {
-    event.respondWith(
-      caches.match(req).then((cached) => cached || fetch(req))
-    );
-    return;
-  }
 
   event.respondWith(
     fetch(req)

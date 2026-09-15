@@ -59,8 +59,9 @@
   }
   .month-label { font-size: 16px; font-weight: 600; text-transform: capitalize; }
   .month-picker {
-    font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 600; text-transform: uppercase;
-    background: none; border: none; color: var(--ink); text-align: center; letter-spacing: .05em;
+    flex: 1; min-width: 0;
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; text-transform: capitalize;
+    background: none; border: none; color: var(--ink); text-align: center; letter-spacing: .01em;
     -webkit-appearance: none; appearance: none; padding: 4px 2px; cursor: pointer;
     text-shadow: 0 0 10px var(--glow-soft);
   }
@@ -188,12 +189,14 @@
   .notes-body.open { display: block; position: relative; padding: 10px 4px 4px; }
   .notes-hint { font-size: 11.5px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
   .note-row {
-    display: grid; grid-template-columns: 1fr auto 26px;
+    display: grid; grid-template-columns: 22px 1fr auto 26px;
     align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line);
   }
+  .note-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--gold); }
   .note-amount.income { color: var(--green); font-family: 'Share Tech Mono', monospace; font-size: 14px; }
   .note-amount.expense { color: var(--red); font-family: 'Share Tech Mono', monospace; font-size: 14px; }
   .note-label { font-size: 14px; }
+  .note-label.done { color: var(--muted); text-decoration: line-through; }
 
   .list-picker-row { display: flex; gap: 8px; margin-bottom: 10px; }
   .list-select {
@@ -257,6 +260,22 @@
   .cat-bar-fill { height: 100%; border-radius: 3px; }
   .cat-bar-fill.income { background: var(--green); box-shadow: 0 0 6px rgba(78,240,168,0.6); }
   .cat-bar-fill.expense { background: var(--red); box-shadow: 0 0 6px rgba(255,92,122,0.6); }
+
+  .tab-bar {
+    display: flex; gap: 6px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 2px;
+  }
+  .tab-btn {
+    flex: 1; min-width: 76px; padding: 10px 6px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--muted); font-family: 'Rajdhani', sans-serif; font-weight: 700;
+    font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: var(--gold-bg); color: var(--gold); border-color: var(--gold);
+    box-shadow: 0 0 14px var(--glow-soft); text-shadow: 0 0 8px var(--glow);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: tabIn .15s ease; }
+  @keyframes tabIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
@@ -264,132 +283,131 @@
   <h1>Mon budget</h1>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">chargement…</span></div>
 
-  <div class="month-nav">
-    <button id="prevMonth">‹</button>
-    <input type="month" id="monthPicker" class="month-picker">
-    <button id="nextMonth">›</button>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="budget">💰 Budget</button>
+    <button class="tab-btn" data-tab="summary">📊 Résumé</button>
+    <button class="tab-btn" data-tab="lists">📝 Listes</button>
+    <button class="tab-btn" data-tab="settings">⚙️ Réglages</button>
   </div>
 
-  <div class="field search-field">
-    <input type="text" id="txnSearchInput" placeholder="🔍 Rechercher dans toutes les transactions…">
-  </div>
-  <div id="txnSearchResults"></div>
-
-  <div id="monthlyContent">
-    <div class="totals">
-      <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="totalIncome">0 CHF</span></div>
-      <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="totalExpense">0 CHF</span></div>
-      <div class="total-card net"><span class="lbl">Reste</span><span class="val" id="totalNet">0 CHF</span></div>
+  <div class="tab-panel active" id="tabPanel-budget">
+    <div class="month-nav">
+      <button id="prevMonth">‹</button>
+      <input type="month" id="monthPicker" class="month-picker">
+      <button id="nextMonth">›</button>
     </div>
 
-    <button class="copy-btn" id="copyPrevMonth">↻ Copier les entrées du mois précédent (non payées)</button>
-
-    <div class="section-title income">Revenus</div>
-    <div id="incomeList"></div>
-
-    <div class="section-title expense">Dépenses</div>
-    <div id="expenseList"></div>
-  </div>
-
-  <div class="add-box">
-    <h2>Nouvelle entrée</h2>
-    <div class="type-toggle">
-      <button id="typeExpenseBtn" class="expense active">Dépense</button>
-      <button id="typeIncomeBtn" class="income">Revenu</button>
+    <div class="field search-field">
+      <input type="text" id="txnSearchInput" placeholder="🔍 Rechercher dans toutes les transactions…">
     </div>
-    <div class="field">
-      <input type="text" id="labelInput" placeholder="Intitulé (ex: Loyer)" autocomplete="off">
-      <div class="suggestions" id="suggestions" style="display:none;"></div>
+    <div id="txnSearchResults"></div>
+
+    <div id="monthlyContent">
+      <div class="totals">
+        <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="totalIncome">0 CHF</span></div>
+        <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="totalExpense">0 CHF</span></div>
+        <div class="total-card net"><span class="lbl">Reste</span><span class="val" id="totalNet">0 CHF</span></div>
+      </div>
+
+      <button class="copy-btn" id="copyPrevMonth">↻ Copier les entrées du mois précédent (non payées)</button>
+
+      <div class="section-title income">Revenus</div>
+      <div id="incomeList"></div>
+
+      <div class="section-title expense">Dépenses</div>
+      <div id="expenseList"></div>
     </div>
-    <div class="row2">
-      <div class="field">
-        <input type="number" id="amountInput" placeholder="Montant" inputmode="decimal">
+
+    <div class="add-box">
+      <h2>Nouvelle entrée</h2>
+      <div class="type-toggle">
+        <button id="typeExpenseBtn" class="expense active">Dépense</button>
+        <button id="typeIncomeBtn" class="income">Revenu</button>
       </div>
       <div class="field">
-        <input type="text" id="categoryInput" placeholder="Catégorie">
+        <input type="text" id="labelInput" placeholder="Intitulé (ex: Loyer)" autocomplete="off">
+        <div class="suggestions" id="suggestions" style="display:none;"></div>
       </div>
-    </div>
-    <div class="field">
-      <input type="date" id="dateInput">
-    </div>
-    <div class="field">
-      <input type="text" id="commentInput" placeholder="Commentaire (optionnel)">
-    </div>
-    <button class="add-submit" id="addBtn">Ajouter</button>
-  </div>
-
-  <div class="summary-section">
-    <button class="notes-toggle" id="summaryToggle">
-      <span>📊 Résumé par catégorie</span>
-      <span class="chev">›</span>
-    </button>
-    <div class="notes-body" id="summaryBody">
-      <div class="period-toggle">
-        <button id="summaryMonthBtn" class="active">Ce mois</button>
-        <button id="summaryYearBtn">Cette année</button>
-      </div>
-      <div class="section-title income">Revenus par catégorie</div>
-      <div id="summaryIncomeList"></div>
-      <div class="section-title expense">Dépenses par catégorie</div>
-      <div id="summaryExpenseList"></div>
-    </div>
-  </div>
-
-  <div class="footer-tools">
-    <button id="exportBtn">Exporter (backup)</button>
-    <button id="importBtn">Importer</button>
-    <input type="file" id="importFile" accept="application/json">
-  </div>
-
-  <div class="drive-section">
-    <div class="section-title drive-title">☁️ Synchronisation Google Drive</div>
-    <div class="notes-hint">Ne fonctionne qu'une fois l'appli hébergée sur ton propre domaine (GitHub Pages) — pas dans cet aperçu Claude.</div>
-    <div id="driveStatus" class="drive-status">Non connecté</div>
-    <button class="copy-btn" id="driveConnectBtn">Connecter Google Drive</button>
-    <div class="drive-actions">
-      <button class="add-submit drive-save" id="driveSaveBtn" disabled>Sauvegarder</button>
-      <button class="add-submit drive-restore" id="driveRestoreBtn" disabled>Restaurer</button>
-    </div>
-  </div>
-
-  <div class="notes-section">
-    <button class="notes-toggle" id="notesToggle">
-      <span>📝 Listes de notes (hors budget mensuel)</span>
-      <span class="chev">›</span>
-    </button>
-    <div class="notes-body" id="notesBody">
-      <div class="notes-hint">Chaque liste est indépendante et n'est jamais comptée dans le budget mensuel — utile pour un projet, un événement, un suivi ponctuel.</div>
-
-      <div class="list-picker-row">
-        <select id="listSelect" class="list-select"></select>
-        <button id="newListToggleBtn" class="new-list-btn">+ Nouvelle liste</button>
-      </div>
-      <div class="new-list-row" id="newListRow" style="display:none;">
-        <input type="text" id="newListNameInput" placeholder="Nom de la liste (ex: Voyage Japon)">
-        <button id="createListBtn">Créer</button>
-      </div>
-
-      <div class="field search-field">
-        <input type="text" id="notesSearchInput" placeholder="🔍 Rechercher dans toutes les listes…">
-      </div>
-
-      <div id="activeListContent">
-        <div class="totals" id="notesTotals">
-          <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="notesTotalIncome">0 CHF</span></div>
-          <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="notesTotalExpense">0 CHF</span></div>
-          <div class="total-card net"><span class="lbl">Solde</span><span class="val" id="notesTotalNet">0 CHF</span></div>
+      <div class="row2">
+        <div class="field">
+          <input type="number" id="amountInput" placeholder="Montant" inputmode="decimal">
         </div>
-        <div id="notesList"></div>
-        <div class="row2" style="margin-top:10px;">
-          <div class="field"><input type="text" id="noteLabelInput" placeholder="Intitulé"></div>
-          <div class="field" style="max-width:110px;"><input type="number" id="noteAmountInput" placeholder="Montant" inputmode="decimal"></div>
+        <div class="field">
+          <input type="text" id="categoryInput" placeholder="Catégorie">
         </div>
-        <div class="type-toggle">
-          <button id="noteTypeExpenseBtn" class="expense active">Dépense</button>
-          <button id="noteTypeIncomeBtn" class="income">Revenu</button>
-        </div>
-        <button class="add-submit" id="noteAddBtn">Ajouter à cette liste</button>
-        <button class="delete-list-btn" id="deleteListBtn">🗑 Supprimer cette liste</button>
+      </div>
+      <div class="field">
+        <input type="date" id="dateInput">
+      </div>
+      <div class="field">
+        <input type="text" id="commentInput" placeholder="Commentaire (optionnel)">
+      </div>
+      <button class="add-submit" id="addBtn">Ajouter</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tabPanel-summary">
+    <div class="period-toggle">
+      <button id="summaryMonthBtn" class="active">Ce mois</button>
+      <button id="summaryYearBtn">Cette année</button>
+    </div>
+    <div class="section-title income">Revenus par catégorie</div>
+    <div id="summaryIncomeList"></div>
+    <div class="section-title expense">Dépenses par catégorie</div>
+    <div id="summaryExpenseList"></div>
+  </div>
+
+  <div class="tab-panel" id="tabPanel-lists">
+    <div class="notes-hint">Chaque liste est indépendante et n'est jamais comptée dans le budget mensuel — utile pour un projet, un événement, un suivi ponctuel.</div>
+
+    <div class="list-picker-row">
+      <select id="listSelect" class="list-select"></select>
+      <button id="newListToggleBtn" class="new-list-btn">+ Nouvelle liste</button>
+    </div>
+    <div class="new-list-row" id="newListRow" style="display:none;">
+      <input type="text" id="newListNameInput" placeholder="Nom de la liste (ex: Voyage Japon)">
+      <button id="createListBtn">Créer</button>
+    </div>
+
+    <div class="field search-field">
+      <input type="text" id="notesSearchInput" placeholder="🔍 Rechercher dans toutes les listes…">
+    </div>
+
+    <div id="activeListContent">
+      <div class="totals" id="notesTotals">
+        <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="notesTotalIncome">0 CHF</span></div>
+        <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="notesTotalExpense">0 CHF</span></div>
+        <div class="total-card net"><span class="lbl">Solde</span><span class="val" id="notesTotalNet">0 CHF</span></div>
+      </div>
+      <div id="notesList"></div>
+      <div class="row2" style="margin-top:10px;">
+        <div class="field"><input type="text" id="noteLabelInput" placeholder="Intitulé"></div>
+        <div class="field" style="max-width:110px;"><input type="number" id="noteAmountInput" placeholder="Montant" inputmode="decimal"></div>
+      </div>
+      <div class="type-toggle">
+        <button id="noteTypeExpenseBtn" class="expense active">Dépense</button>
+        <button id="noteTypeIncomeBtn" class="income">Revenu</button>
+      </div>
+      <button class="add-submit" id="noteAddBtn">Ajouter à cette liste</button>
+      <button class="delete-list-btn" id="deleteListBtn">🗑 Supprimer cette liste</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tabPanel-settings">
+    <div class="footer-tools">
+      <button id="exportBtn">Exporter (backup)</button>
+      <button id="importBtn">Importer</button>
+      <input type="file" id="importFile" accept="application/json">
+    </div>
+
+    <div class="drive-section">
+      <div class="section-title drive-title">☁️ Synchronisation Google Drive</div>
+      <div class="notes-hint">Ne fonctionne qu'une fois l'appli hébergée sur ton propre domaine (GitHub Pages) — pas dans cet aperçu Claude.</div>
+      <div id="driveStatus" class="drive-status">Non connecté</div>
+      <button class="copy-btn" id="driveConnectBtn">Connecter Google Drive</button>
+      <div class="drive-actions">
+        <button class="add-submit drive-save" id="driveSaveBtn" disabled>Sauvegarder</button>
+        <button class="add-submit drive-restore" id="driveRestoreBtn" disabled>Restaurer</button>
       </div>
     </div>
   </div>
@@ -582,11 +600,6 @@ function renderSummary() {
   renderCatList("summaryIncomeList", computeCategoryTotals("income"), "income");
   renderCatList("summaryExpenseList", computeCategoryTotals("expense"), "expense");
 }
-
-$("summaryToggle").addEventListener("click", () => {
-  $("summaryToggle").classList.toggle("open");
-  $("summaryBody").classList.toggle("open");
-});
 
 $("summaryMonthBtn").addEventListener("click", () => {
   summaryPeriod = "month";
@@ -934,10 +947,16 @@ function renderNotes() {
     const row = document.createElement("div");
     row.className = "note-row";
     row.innerHTML = `
-      <div class="note-label">${escapeHtml(n.label)}</div>
+      <input type="checkbox" ${n.checked ? "checked" : ""} title="Coché">
+      <div class="note-label ${n.checked ? "done" : ""}">${escapeHtml(n.label)}</div>
       <div class="note-amount ${n.type}">${n.type === "income" ? "+" : "−"}${fmt(n.amount)}</div>
       <button class="txn-del">✕</button>
     `;
+    row.querySelector("input[type=checkbox]").addEventListener("change", (e) => {
+      n.checked = e.target.checked;
+      save();
+      renderNotes();
+    });
     row.querySelector(".txn-del").addEventListener("click", () => {
       list.notes = list.notes.filter(x => x.id !== n.id);
       save();
@@ -997,11 +1016,6 @@ $("notesSearchInput").addEventListener("input", (e) => {
   }
 });
 
-$("notesToggle").addEventListener("click", () => {
-  $("notesToggle").classList.toggle("open");
-  $("notesBody").classList.toggle("open");
-});
-
 $("noteTypeExpenseBtn").addEventListener("click", () => setNoteType("expense"));
 $("noteTypeIncomeBtn").addEventListener("click", () => setNoteType("income"));
 function setNoteType(t) {
@@ -1018,7 +1032,7 @@ $("noteAddBtn").addEventListener("click", () => {
     return;
   }
   const list = getActiveList();
-  list.notes.push({ id: uid(), label, amount, type: currentNoteType });
+  list.notes.push({ id: uid(), label, amount, type: currentNoteType, checked: false });
   $("noteLabelInput").value = "";
   $("noteAmountInput").value = "";
   save();
@@ -1132,6 +1146,16 @@ $("driveRestoreBtn").addEventListener("click", async () => {
 });
 
 window.addEventListener("load", () => setTimeout(initDrive, 400));
+
+// --- Navigation par onglets ---
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+    $("tabPanel-" + btn.dataset.tab).classList.add("active");
+  });
+});
 
 load().then(() => {
   renderListSelect();

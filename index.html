@@ -276,6 +276,52 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; animation: tabIn .15s ease; }
   @keyframes tabIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .field-with-btn { display: flex; gap: 6px; align-items: stretch; }
+  .field-with-btn input { flex: 1; min-width: 0; }
+  .calc-btn {
+    flex: 0 0 auto; padding: 0 12px; border-radius: 6px; border: 1px solid var(--gold);
+    background: var(--gold-bg); color: var(--gold); font-size: 17px; cursor: pointer;
+    box-shadow: 0 0 8px var(--glow-soft);
+  }
+
+  .txn-amount, .note-amount { cursor: pointer; border-bottom: 1px dotted currentColor; }
+  .inline-amount-input {
+    font-family: 'Share Tech Mono', monospace; font-size: 14px; width: 88px; text-align: right;
+    background: var(--surface-2); border: 1px solid var(--gold); border-radius: 5px; color: var(--ink); padding: 3px 6px;
+  }
+
+  .calc-overlay {
+    position: fixed; inset: 0; background: rgba(2,4,12,0.7); display: flex; align-items: flex-end;
+    justify-content: center; z-index: 100;
+  }
+  .calc-panel {
+    width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--gold);
+    border-bottom: none; border-radius: 16px 16px 0 0; padding: 18px 16px 22px;
+    box-shadow: 0 0 30px var(--glow), 0 -4px 24px rgba(0,0,0,0.5);
+  }
+  .calc-display {
+    font-family: 'Share Tech Mono', monospace; font-size: 24px; text-align: right; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px;
+    margin-bottom: 12px; min-height: 20px; overflow-x: auto; white-space: nowrap;
+  }
+  .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .calc-grid button {
+    padding: 15px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2);
+    color: var(--ink); font-family: 'Share Tech Mono', monospace; font-size: 17px; cursor: pointer;
+  }
+  .calc-grid button.calc-op { color: var(--gold); border-color: var(--gold); }
+  .calc-grid button.calc-clear { color: var(--red); border-color: var(--red); }
+  .calc-actions { display: flex; gap: 8px; }
+  .calc-cancel {
+    flex: 1; padding: 12px; border-radius: 7px; border: 1px solid var(--line); background: none;
+    color: var(--muted); font-family: 'Rajdhani', sans-serif; font-weight: 700; cursor: pointer; text-transform: uppercase;
+  }
+  .calc-use {
+    flex: 2; padding: 12px; border-radius: 7px; border: 1px solid var(--gold);
+    background: linear-gradient(135deg, #7C5CFF, #5A82FF); color: #fff; font-family: 'Orbitron', sans-serif;
+    font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 14px var(--glow);
+  }
 </style>
 </head>
 <body>
@@ -329,8 +375,9 @@
         <div class="suggestions" id="suggestions" style="display:none;"></div>
       </div>
       <div class="row2">
-        <div class="field">
+        <div class="field field-with-btn">
           <input type="number" id="amountInput" placeholder="Montant" inputmode="decimal">
+          <button type="button" class="calc-btn" id="calcOpenBtn" title="Calculatrice">🧮</button>
         </div>
         <div class="field">
           <input type="text" id="categoryInput" placeholder="Catégorie">
@@ -382,7 +429,10 @@
       <div id="notesList"></div>
       <div class="row2" style="margin-top:10px;">
         <div class="field"><input type="text" id="noteLabelInput" placeholder="Intitulé"></div>
-        <div class="field" style="max-width:110px;"><input type="number" id="noteAmountInput" placeholder="Montant" inputmode="decimal"></div>
+        <div class="field field-with-btn" style="max-width:140px;">
+          <input type="number" id="noteAmountInput" placeholder="Montant" inputmode="decimal">
+          <button type="button" class="calc-btn" id="noteCalcOpenBtn" title="Calculatrice">🧮</button>
+        </div>
       </div>
       <div class="type-toggle">
         <button id="noteTypeExpenseBtn" class="expense active">Dépense</button>
@@ -414,6 +464,22 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="calc-overlay" id="calcOverlay" style="display:none;">
+  <div class="calc-panel">
+    <div class="calc-display" id="calcDisplay">0</div>
+    <div class="calc-grid">
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="/" class="calc-op">÷</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="*" class="calc-op">×</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="-" class="calc-op">−</button>
+      <button data-k="0">0</button><button data-k=".">.</button><button data-k="C" class="calc-clear">C</button><button data-k="+" class="calc-op">+</button>
+    </div>
+    <div class="calc-actions">
+      <button id="calcCancelBtn" class="calc-cancel">Annuler</button>
+      <button id="calcEqualsBtn" class="calc-use">Utiliser ce total</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -652,12 +718,52 @@ function renderList(elId, list, type) {
       save();
       render();
     });
+    row.querySelector(".txn-amount").addEventListener("click", (e) => {
+      const amountEl = e.currentTarget;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "decimal";
+      input.className = "inline-amount-input";
+      input.value = t.amount;
+      amountEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let committed = false;
+      const commit = () => {
+        if (committed) return;
+        committed = true;
+        const val = safeEval(input.value);
+        if (!isNaN(val) && val > 0) {
+          t.amount = val;
+          save();
+        }
+        render();
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); input.blur(); }
+        if (ev.key === "Escape") { committed = true; render(); }
+      });
+    });
     el.appendChild(row);
   }
 }
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// Évaluateur restreint : uniquement chiffres, + - * / ( ) et espaces.
+function safeEval(expr) {
+  const cleaned = String(expr).trim().replace(/,/g, ".").replace(/×/g, "*").replace(/÷/g, "/");
+  if (!cleaned) return NaN;
+  if (!/^[0-9+\-*/().\s]+$/.test(cleaned)) return NaN;
+  try {
+    const result = Function('"use strict"; return (' + cleaned + ')')();
+    return (typeof result === "number" && isFinite(result)) ? result : NaN;
+  } catch (e) {
+    return NaN;
+  }
 }
 
 function renderTxnSearchResults(query) {
@@ -962,6 +1068,33 @@ function renderNotes() {
       save();
       renderNotes();
     });
+    row.querySelector(".note-amount").addEventListener("click", (e) => {
+      const amountEl = e.currentTarget;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "decimal";
+      input.className = "inline-amount-input";
+      input.value = n.amount;
+      amountEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let committed = false;
+      const commit = () => {
+        if (committed) return;
+        committed = true;
+        const val = safeEval(input.value);
+        if (!isNaN(val) && val > 0) {
+          n.amount = val;
+          save();
+        }
+        renderNotes();
+      };
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); input.blur(); }
+        if (ev.key === "Escape") { committed = true; renderNotes(); }
+      });
+    });
     el.appendChild(row);
   }
 }
@@ -1146,6 +1279,39 @@ $("driveRestoreBtn").addEventListener("click", async () => {
 });
 
 window.addEventListener("load", () => setTimeout(initDrive, 400));
+
+// --- Calculatrice ---
+let calcExpr = "";
+let calcTargetInput = null;
+
+function openCalculator(targetInput) {
+  calcTargetInput = targetInput;
+  const current = targetInput.value;
+  calcExpr = (current && !isNaN(parseFloat(current))) ? String(current) : "";
+  $("calcDisplay").textContent = calcExpr || "0";
+  $("calcOverlay").style.display = "flex";
+}
+function closeCalculator() {
+  $("calcOverlay").style.display = "none";
+  calcTargetInput = null;
+}
+document.querySelectorAll(".calc-grid button[data-k]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const k = btn.dataset.k;
+    calcExpr = (k === "C") ? "" : calcExpr + k;
+    $("calcDisplay").textContent = calcExpr || "0";
+  });
+});
+$("calcCancelBtn").addEventListener("click", closeCalculator);
+$("calcEqualsBtn").addEventListener("click", () => {
+  const result = safeEval(calcExpr);
+  if (!isNaN(result) && calcTargetInput) {
+    calcTargetInput.value = Math.round(result * 100) / 100;
+  }
+  closeCalculator();
+});
+$("calcOpenBtn").addEventListener("click", () => openCalculator($("amountInput")));
+$("noteCalcOpenBtn").addEventListener("click", () => openCalculator($("noteAmountInput")));
 
 // --- Navigation par onglets ---
 document.querySelectorAll(".tab-btn").forEach((btn) => {

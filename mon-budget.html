@@ -67,13 +67,22 @@
   }
   .month-picker::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
 
-  .totals { display: flex; gap: 8px; margin-bottom: 16px; }
+  .totals { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .totals-4 .total-card { flex: 1 1 40%; }
   .total-card { flex: 1; border-radius: 8px; padding: 10px 12px; border: 1px solid var(--line); position: relative; }
   .total-card .lbl { font-size: 10px; color: var(--muted); display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .08em; }
   .total-card .val { font-family: 'Share Tech Mono', monospace; font-size: 15px; font-weight: 700; }
   .total-card.income { background: var(--green-bg); border-color: rgba(78,240,168,0.4); box-shadow: 0 0 12px rgba(78,240,168,0.12); }
   .total-card.expense { background: var(--red-bg); border-color: rgba(255,92,122,0.4); box-shadow: 0 0 12px rgba(255,92,122,0.12); }
+  .total-card.transfer { background: var(--gold-bg); border-color: rgba(124,92,255,0.4); box-shadow: 0 0 12px var(--glow-soft); }
   .total-card.net { background: var(--gold-bg); border: 1px solid var(--gold); box-shadow: 0 0 14px var(--glow-soft); }
+
+  .savings-balance-card { display: flex; flex-direction: column; align-items: center; padding: 22px 12px; margin-bottom: 18px; }
+  .savings-balance-card .lbl { font-size: 11px; margin-bottom: 6px; }
+  .savings-balance-val { font-size: 30px !important; }
+  .savings-base-row { margin-bottom: 4px; }
+  .savings-base-amount { cursor: pointer; border-bottom: 1px dotted currentColor; font-family: 'Share Tech Mono', monospace; }
+  .savings-withdraw-btn { background: linear-gradient(135deg, #D98C7A, #FF5C7A) !important; }
 
   .copy-btn {
     width: 100%; padding: 9px; margin-bottom: 18px; border-radius: 7px;
@@ -88,6 +97,7 @@
   }
   .section-title.income { color: var(--green); border-color: var(--green); text-shadow: 0 0 8px rgba(78,240,168,0.45); }
   .section-title.expense { color: var(--red); border-color: var(--red); text-shadow: 0 0 8px rgba(255,92,122,0.45); }
+  .section-title.transfer { color: var(--gold); border-color: var(--gold); text-shadow: 0 0 8px var(--glow); }
 
   .txn-row {
     display: grid; grid-template-columns: 22px 1fr auto 26px;
@@ -102,6 +112,7 @@
   .txn-amount { font-family: 'Share Tech Mono', monospace; font-size: 14.5px; white-space: nowrap; }
   .txn-amount.income { color: var(--green); }
   .txn-amount.expense { color: var(--red); }
+  .txn-amount.transfer { color: var(--gold); }
   .txn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 4px; }
   .txn-del:active { color: var(--red); }
   .empty { font-size: 13px; color: var(--muted); padding: 10px 0; font-style: italic; }
@@ -133,6 +144,7 @@
   }
   .type-toggle button.active.expense { background: var(--red-bg); color: var(--red); border-color: var(--red); box-shadow: 0 0 10px rgba(255,92,122,0.25); }
   .type-toggle button.active.income { background: var(--green-bg); color: var(--green); border-color: var(--green); box-shadow: 0 0 10px rgba(78,240,168,0.25); }
+  .type-toggle button.active.transfer { background: var(--gold-bg); color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px var(--glow-soft); }
 
   .field { position: relative; margin-bottom: 8px; }
   .field input {
@@ -260,14 +272,20 @@
   .cat-bar-fill { height: 100%; border-radius: 3px; }
   .cat-bar-fill.income { background: var(--green); box-shadow: 0 0 6px rgba(78,240,168,0.6); }
   .cat-bar-fill.expense { background: var(--red); box-shadow: 0 0 6px rgba(255,92,122,0.6); }
+  .cat-row-top { cursor: pointer; }
+  .cat-detail { margin-top: 8px; padding-left: 4px; border-left: 2px solid var(--line); }
+  .cat-detail-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding: 4px 0 4px 8px; }
+  .cat-detail-row .cd-label { color: var(--ink); }
+  .cat-detail-row .cd-amount { font-family: 'Share Tech Mono', monospace; }
 
   .tab-bar {
-    display: flex; gap: 6px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 2px;
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
   }
   .tab-btn {
-    flex: 1; min-width: 76px; padding: 10px 6px; border-radius: 8px; border: 1px solid var(--line);
+    flex: 1 1 30%; min-width: 0; padding: 10px 4px; border-radius: 8px; border: 1px solid var(--line);
     background: var(--surface); color: var(--muted); font-family: 'Rajdhani', sans-serif; font-weight: 700;
-    font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap;
+    font-size: 11.5px; cursor: pointer; text-transform: uppercase; letter-spacing: .01em; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
   }
   .tab-btn.active {
     background: var(--gold-bg); color: var(--gold); border-color: var(--gold);
@@ -333,6 +351,7 @@
     <button class="tab-btn active" data-tab="budget">💰 Budget</button>
     <button class="tab-btn" data-tab="summary">📊 Résumé</button>
     <button class="tab-btn" data-tab="lists">📝 Listes</button>
+    <button class="tab-btn" data-tab="savings">🏦 Épargne</button>
     <button class="tab-btn" data-tab="settings">⚙️ Réglages</button>
   </div>
 
@@ -349,9 +368,10 @@
     <div id="txnSearchResults"></div>
 
     <div id="monthlyContent">
-      <div class="totals">
+      <div class="totals totals-4">
         <div class="total-card income"><span class="lbl">Revenus</span><span class="val" id="totalIncome">0 CHF</span></div>
         <div class="total-card expense"><span class="lbl">Dépenses</span><span class="val" id="totalExpense">0 CHF</span></div>
+        <div class="total-card transfer"><span class="lbl">Transferts</span><span class="val" id="totalTransfer">0 CHF</span></div>
         <div class="total-card net"><span class="lbl">Reste</span><span class="val" id="totalNet">0 CHF</span></div>
       </div>
 
@@ -362,6 +382,9 @@
 
       <div class="section-title expense">Dépenses</div>
       <div id="expenseList"></div>
+
+      <div class="section-title transfer">Transferts vers l'épargne</div>
+      <div id="transferList"></div>
     </div>
 
     <div class="add-box">
@@ -369,6 +392,7 @@
       <div class="type-toggle">
         <button id="typeExpenseBtn" class="expense active">Dépense</button>
         <button id="typeIncomeBtn" class="income">Revenu</button>
+        <button id="typeTransferBtn" class="transfer">Transfert</button>
       </div>
       <div class="field">
         <input type="text" id="labelInput" placeholder="Intitulé (ex: Loyer)" autocomplete="off">
@@ -443,6 +467,34 @@
     </div>
   </div>
 
+  <div class="tab-panel" id="tabPanel-savings">
+    <div class="total-card net savings-balance-card">
+      <span class="lbl">Solde épargne</span>
+      <span class="val savings-balance-val" id="savingsBalance">0 CHF</span>
+    </div>
+
+    <div class="cat-row savings-base-row">
+      <div class="cat-row-top">
+        <span class="cat-row-name">Montant de base</span>
+        <span class="cat-row-amount savings-base-amount" id="savingsBaseAmount">0 CHF</span>
+      </div>
+      <div class="notes-hint">Tape sur le montant pour le modifier — utile si tu veux ajuster ton point de départ.</div>
+    </div>
+
+    <div class="section-title expense" style="margin-top:20px;">Retirer de l'épargne</div>
+    <div class="row2">
+      <div class="field"><input type="text" id="savingsWithdrawLabel" placeholder="Intitulé (ex: Réparation vélo)"></div>
+      <div class="field field-with-btn" style="max-width:140px;">
+        <input type="number" id="savingsWithdrawAmount" placeholder="Montant" inputmode="decimal">
+        <button type="button" class="calc-btn" id="savingsCalcOpenBtn" title="Calculatrice">🧮</button>
+      </div>
+    </div>
+    <button class="add-submit savings-withdraw-btn" id="savingsWithdrawBtn">Retirer</button>
+
+    <div class="section-title income" style="margin-top:24px;">Mouvements</div>
+    <div id="savingsMovementsList"></div>
+  </div>
+
   <div class="tab-panel" id="tabPanel-settings">
     <div class="footer-tools">
       <button id="exportBtn">Exporter (backup)</button>
@@ -491,7 +543,7 @@
 </script>
 <script>
 const STORAGE_KEY = "bluecoins-lite:v1";
-let data = { transactions: [], noteLists: [] };
+let data = { transactions: [], noteLists: [], savings: { base: 0, withdrawals: [] } };
 let currentMonth = new Date(); currentMonth.setDate(1);
 let currentType = "expense";
 let currentNoteType = "expense";
@@ -556,6 +608,11 @@ async function load() {
   if (!Array.isArray(data.noteLists) || data.noteLists.length === 0) {
     data.noteLists = [{ id: uid(), name: "Général", notes: [] }];
   }
+  if (!data.savings || typeof data.savings !== "object") {
+    data.savings = { base: 0, withdrawals: [] };
+  }
+  if (!Array.isArray(data.savings.withdrawals)) data.savings.withdrawals = [];
+  if (typeof data.savings.base !== "number") data.savings.base = 0;
   currentListId = data.noteLists[0].id;
   render();
 }
@@ -593,15 +650,19 @@ function render() {
   const txns = txnsForMonth(currentMonth).sort((a, b) => a.date.localeCompare(b.date));
   const incomes = txns.filter(t => t.type === "income");
   const expenses = txns.filter(t => t.type === "expense");
+  const transfers = txns.filter(t => t.type === "transfer");
 
   const totalIncome = incomes.reduce((s, t) => s + t.amount, 0);
   const totalExpense = expenses.reduce((s, t) => s + t.amount, 0);
+  const totalTransfer = transfers.reduce((s, t) => s + t.amount, 0);
   $("totalIncome").textContent = fmt(totalIncome);
   $("totalExpense").textContent = fmt(totalExpense);
-  $("totalNet").textContent = fmt(totalIncome - totalExpense);
+  $("totalTransfer").textContent = fmt(totalTransfer);
+  $("totalNet").textContent = fmt(totalIncome - totalExpense - totalTransfer);
 
   renderList("incomeList", incomes, "income");
   renderList("expenseList", expenses, "expense");
+  renderList("transferList", transfers, "transfer");
 
   const d = $("dateInput");
   if (!d.value || d.value.slice(0,7) !== monthKey(currentMonth)) {
@@ -614,6 +675,7 @@ function render() {
   }
 
   renderSummary();
+  renderSavings();
 }
 
 function dayHeaderStr(dateStr) {
@@ -639,6 +701,19 @@ function computeCategoryTotals(type) {
   return Object.entries(map).sort((a, b) => b[1] - a[1]);
 }
 
+function getCategoryTransactions(cat, type) {
+  let txns;
+  if (summaryPeriod === "month") {
+    txns = txnsForMonth(currentMonth).filter(t => t.type === type);
+  } else {
+    const year = String(currentMonth.getFullYear());
+    txns = data.transactions.filter(t => t.type === type && t.date.slice(0, 4) === year);
+  }
+  return txns
+    .filter(t => ((t.category && t.category.trim()) ? t.category.trim() : "Sans catégorie") === cat)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 function renderCatList(elId, entries, type) {
   const el = $(elId);
   el.innerHTML = "";
@@ -657,7 +732,23 @@ function renderCatList(elId, entries, type) {
         <span class="cat-row-amount" style="color:${type === "income" ? "var(--green)" : "var(--red)"}">${fmt(amount)}</span>
       </div>
       <div class="cat-bar-track"><div class="cat-bar-fill ${type}" style="width:${pct}%"></div></div>
+      <div class="cat-detail" style="display:none;"></div>
     `;
+    const detail = row.querySelector(".cat-detail");
+    row.querySelector(".cat-row-top").addEventListener("click", () => {
+      const isOpen = detail.style.display !== "none";
+      if (isOpen) {
+        detail.style.display = "none";
+        detail.innerHTML = "";
+        return;
+      }
+      const txns = getCategoryTransactions(cat, type);
+      detail.innerHTML = txns.map((t) => {
+        const dStr = new Date(t.date + "T00:00:00").toLocaleDateString("fr-CH", { day: "2-digit", month: "2-digit" });
+        return `<div class="cat-detail-row"><span class="cd-label">${dStr} · ${escapeHtml(t.label)}</span><span class="cd-amount">${fmt(t.amount)}</span></div>`;
+      }).join("");
+      detail.style.display = "block";
+    });
     el.appendChild(row);
   }
 }
@@ -666,6 +757,100 @@ function renderSummary() {
   renderCatList("summaryIncomeList", computeCategoryTotals("income"), "income");
   renderCatList("summaryExpenseList", computeCategoryTotals("expense"), "expense");
 }
+
+// --- Épargne ---
+function computeSavingsBalance() {
+  const transfersTotal = data.transactions.filter(t => t.type === "transfer").reduce((s, t) => s + t.amount, 0);
+  const withdrawalsTotal = (data.savings.withdrawals || []).reduce((s, w) => s + w.amount, 0);
+  return (data.savings.base || 0) + transfersTotal - withdrawalsTotal;
+}
+
+function renderSavings() {
+  $("savingsBalance").textContent = fmt(computeSavingsBalance());
+  $("savingsBaseAmount").textContent = fmt(data.savings.base || 0);
+
+  const transfers = data.transactions.filter(t => t.type === "transfer").map(t => ({
+    kind: "transfer", id: t.id, label: t.label, amount: t.amount, date: t.date
+  }));
+  const withdrawals = (data.savings.withdrawals || []).map(w => ({
+    kind: "withdrawal", id: w.id, label: w.label, amount: w.amount, date: w.date
+  }));
+  const movements = [...transfers, ...withdrawals].sort((a, b) => b.date.localeCompare(a.date));
+
+  const el = $("savingsMovementsList");
+  el.innerHTML = "";
+  if (movements.length === 0) {
+    el.innerHTML = '<div class="empty">Aucun mouvement pour l\'instant.</div>';
+    return;
+  }
+  for (const m of movements) {
+    const row = document.createElement("div");
+    row.className = "txn-row";
+    const dateStr = new Date(m.date + "T00:00:00").toLocaleDateString("fr-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
+    row.innerHTML = `
+      <div></div>
+      <div class="txn-main">
+        <div class="txn-label">${escapeHtml(m.label)}</div>
+        <div class="txn-cat">${dateStr}${m.kind === "transfer" ? " · depuis Budget" : ""}</div>
+      </div>
+      <div class="txn-amount ${m.kind === "transfer" ? "income" : "expense"}">${m.kind === "transfer" ? "+" : "−"}${fmt(m.amount)}</div>
+      <button class="txn-del" style="${m.kind === "transfer" ? "visibility:hidden;" : ""}">✕</button>
+    `;
+    if (m.kind === "withdrawal") {
+      row.querySelector(".txn-del").addEventListener("click", () => {
+        data.savings.withdrawals = data.savings.withdrawals.filter(w => w.id !== m.id);
+        save();
+        renderSavings();
+      });
+    }
+    el.appendChild(row);
+  }
+}
+
+$("savingsBaseAmount").addEventListener("click", (e) => {
+  const amountEl = e.currentTarget;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.inputMode = "decimal";
+  input.className = "inline-amount-input";
+  input.value = data.savings.base || 0;
+  amountEl.replaceWith(input);
+  input.focus();
+  input.select();
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    const val = safeEval(input.value);
+    if (!isNaN(val) && val >= 0) {
+      data.savings.base = val;
+      save();
+    }
+    renderSavings();
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); input.blur(); }
+    if (ev.key === "Escape") { committed = true; renderSavings(); }
+  });
+});
+
+$("savingsWithdrawBtn").addEventListener("click", () => {
+  const label = $("savingsWithdrawLabel").value.trim();
+  const amount = parseFloat($("savingsWithdrawAmount").value);
+  if (!label || !amount || amount <= 0) {
+    showToast("Intitulé et montant requis");
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  data.savings.withdrawals.push({ id: uid(), label, amount, date: today });
+  $("savingsWithdrawLabel").value = "";
+  $("savingsWithdrawAmount").value = "";
+  save();
+  renderSavings();
+  showToast("Retrait enregistré");
+});
+$("savingsCalcOpenBtn").addEventListener("click", () => openCalculator($("savingsWithdrawAmount")));
 
 $("summaryMonthBtn").addEventListener("click", () => {
   summaryPeriod = "month";
@@ -705,7 +890,7 @@ function renderList(elId, list, type) {
         ${t.category ? `<div class="txn-cat">${escapeHtml(t.category)}</div>` : ""}
         ${t.comment ? `<div class="txn-comment">${escapeHtml(t.comment)}</div>` : ""}
       </div>
-      <div class="txn-amount ${type}">${type === "income" ? "+" : "−"}${fmt(t.amount)}</div>
+      <div class="txn-amount ${type}">${type === "income" ? "+" : type === "transfer" ? "→" : "−"}${fmt(t.amount)}</div>
       <button class="txn-del">✕</button>
     `;
     row.querySelector("input[type=checkbox]").addEventListener("change", (e) => {
@@ -832,10 +1017,12 @@ $("monthPicker").addEventListener("change", (e) => {
 
 $("typeExpenseBtn").addEventListener("click", () => setType("expense"));
 $("typeIncomeBtn").addEventListener("click", () => setType("income"));
+$("typeTransferBtn").addEventListener("click", () => setType("transfer"));
 function setType(t) {
   currentType = t;
   $("typeExpenseBtn").classList.toggle("active", t === "expense");
   $("typeIncomeBtn").classList.toggle("active", t === "income");
+  $("typeTransferBtn").classList.toggle("active", t === "transfer");
 }
 
 // Autocomplete
@@ -948,6 +1135,11 @@ $("importFile").addEventListener("change", (e) => {
         if (data.noteLists.length === 0) {
           data.noteLists = [{ id: uid(), name: "Général", notes: [] }];
         }
+        if (!data.savings || typeof data.savings !== "object") {
+          data.savings = { base: 0, withdrawals: [] };
+        }
+        if (!Array.isArray(data.savings.withdrawals)) data.savings.withdrawals = [];
+        if (typeof data.savings.base !== "number") data.savings.base = 0;
         currentListId = data.noteLists[0].id;
         save();
         render();

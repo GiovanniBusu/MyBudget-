@@ -308,6 +308,14 @@
     font-family: 'Share Tech Mono', monospace; font-size: 14px; width: 88px; text-align: right;
     background: var(--surface-2); border: 1px solid var(--gold); border-radius: 5px; color: var(--ink); padding: 3px 6px;
   }
+  .txn-label, .txn-cat, .note-label { cursor: pointer; border-bottom: 1px dotted transparent; }
+  .txn-label:active, .txn-cat:active, .note-label:active { border-bottom-color: currentColor; }
+  .txn-cat-empty { opacity: .55; font-style: italic; }
+  .inline-text-input {
+    font-family: 'Rajdhani', sans-serif; font-size: 14.5px; width: 100%; max-width: 100%;
+    background: var(--surface-2); border: 1px solid var(--gold); border-radius: 5px; color: var(--ink); padding: 3px 6px;
+  }
+  .inline-text-input.cat-input { font-size: 12px; padding: 2px 6px; }
 
   .calc-overlay {
     position: fixed; inset: 0; background: rgba(2,4,12,0.7); display: flex; align-items: flex-end;
@@ -802,6 +810,13 @@ function renderSavings() {
         save();
         renderSavings();
       });
+      row.querySelector(".txn-label").addEventListener("click", (e) => {
+        const w = data.savings.withdrawals.find(x => x.id === m.id);
+        editInlineText(e.currentTarget, w.label, (val) => {
+          if (val !== null && val.trim()) { w.label = val.trim(); save(); }
+          renderSavings();
+        });
+      });
     }
     el.appendChild(row);
   }
@@ -887,7 +902,7 @@ function renderList(elId, list, type) {
       <input type="checkbox" ${t.paid ? "checked" : ""} title="Payé / reçu">
       <div class="txn-main">
         <div class="txn-label ${t.paid ? "" : "unpaid"}">${escapeHtml(t.label)}</div>
-        ${t.category ? `<div class="txn-cat">${escapeHtml(t.category)}</div>` : ""}
+        <div class="txn-cat${t.category ? "" : " txn-cat-empty"}">${t.category ? escapeHtml(t.category) : "+ catégorie"}</div>
         ${t.comment ? `<div class="txn-comment">${escapeHtml(t.comment)}</div>` : ""}
       </div>
       <div class="txn-amount ${type}">${type === "income" ? "+" : type === "transfer" ? "→" : "−"}${fmt(t.amount)}</div>
@@ -902,6 +917,18 @@ function renderList(elId, list, type) {
       data.transactions = data.transactions.filter(x => x.id !== t.id);
       save();
       render();
+    });
+    row.querySelector(".txn-label").addEventListener("click", (e) => {
+      editInlineText(e.currentTarget, t.label, (val) => {
+        if (val !== null && val.trim()) { t.label = val.trim(); save(); }
+        render();
+      });
+    });
+    row.querySelector(".txn-cat").addEventListener("click", (e) => {
+      editInlineText(e.currentTarget, t.category || "", (val) => {
+        if (val !== null) { t.category = val.trim(); save(); }
+        render();
+      }, { placeholder: "Catégorie (ex: Alimentation)", small: true });
     });
     row.querySelector(".txn-amount").addEventListener("click", (e) => {
       const amountEl = e.currentTarget;
@@ -932,6 +959,31 @@ function renderList(elId, list, type) {
     });
     el.appendChild(row);
   }
+}
+
+// Édition inline générique pour un champ texte (libellé, catégorie…).
+// commitFn(val) est appelé avec la nouvelle valeur (string) validée, ou null si annulé (Échap).
+function editInlineText(el, currentValue, commitFn, opts) {
+  opts = opts || {};
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "inline-text-input" + (opts.small ? " cat-input" : "");
+  input.value = currentValue || "";
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    commitFn(input.value);
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); input.blur(); }
+    if (ev.key === "Escape") { committed = true; commitFn(null); }
+  });
 }
 
 function escapeHtml(s) {
@@ -1259,6 +1311,12 @@ function renderNotes() {
       list.notes = list.notes.filter(x => x.id !== n.id);
       save();
       renderNotes();
+    });
+    row.querySelector(".note-label").addEventListener("click", (e) => {
+      editInlineText(e.currentTarget, n.label, (val) => {
+        if (val !== null && val.trim()) { n.label = val.trim(); save(); }
+        renderNotes();
+      });
     });
     row.querySelector(".note-amount").addEventListener("click", (e) => {
       const amountEl = e.currentTarget;

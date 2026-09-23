@@ -91,6 +91,15 @@
   }
   .copy-btn:active { background: var(--line); }
 
+  .copy-specific-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  .copy-month-picker {
+    flex: 1; min-width: 0; padding: 8px;
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    background: var(--surface-2); border: 1px solid var(--muted); border-radius: 7px; color: var(--ink);
+    text-align: center; -webkit-appearance: none; appearance: none;
+  }
+  .copy-specific-row .copy-btn { width: auto; margin-bottom: 0; white-space: nowrap; padding: 8px 12px; }
+
   .section-title {
     font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: .1em; font-weight: 700;
     text-transform: uppercase; border-bottom: 2px solid; padding-bottom: 5px; margin: 18px 0 6px;
@@ -384,6 +393,12 @@
       </div>
 
       <button class="copy-btn" id="copyPrevMonth">↻ Copier les entrées du mois précédent (non payées)</button>
+
+      <button class="copy-btn" id="copySpecificToggle">↻ Copier les entrées d'un mois spécifique…</button>
+      <div class="copy-specific-row" id="copySpecificRow" style="display:none;">
+        <input type="month" id="copySpecificMonth" class="copy-month-picker">
+        <button class="copy-btn" id="copySpecificConfirm">Copier</button>
+      </div>
 
       <div class="section-title income">Revenus</div>
       <div id="incomeList"></div>
@@ -1136,16 +1151,16 @@ $("addBtn").addEventListener("click", () => {
   showToast("Ajouté");
 });
 
-$("copyPrevMonth").addEventListener("click", () => {
-  const prev = new Date(currentMonth);
-  prev.setMonth(prev.getMonth() - 1);
-  const prevTxns = txnsForMonth(prev);
-  if (prevTxns.length === 0) {
-    showToast("Rien à copier depuis le mois précédent");
+// Copie toutes les transactions du mois `sourceDate` vers `currentMonth`,
+// en conservant le jour du mois (ajusté si le mois cible a moins de jours).
+function copyEntriesFromMonth(sourceDate) {
+  const srcTxns = txnsForMonth(sourceDate);
+  if (srcTxns.length === 0) {
+    showToast("Rien à copier depuis ce mois");
     return;
   }
   const daysInCurrent = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-  for (const t of prevTxns) {
+  for (const t of srcTxns) {
     const day = Math.min(parseInt(t.date.slice(8, 10), 10), daysInCurrent);
     const newDate = currentMonth.getFullYear() + "-" + String(currentMonth.getMonth() + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
     data.transactions.push({
@@ -1154,7 +1169,33 @@ $("copyPrevMonth").addEventListener("click", () => {
   }
   save();
   render();
-  showToast(prevTxns.length + " entrée(s) copiée(s)");
+  showToast(srcTxns.length + " entrée(s) copiée(s)");
+}
+
+$("copyPrevMonth").addEventListener("click", () => {
+  const prev = new Date(currentMonth);
+  prev.setMonth(prev.getMonth() - 1);
+  copyEntriesFromMonth(prev);
+});
+
+$("copySpecificToggle").addEventListener("click", () => {
+  const row = $("copySpecificRow");
+  const opening = row.style.display === "none";
+  row.style.display = opening ? "flex" : "none";
+  if (opening) $("copySpecificMonth").value = monthKey(currentMonth);
+});
+
+$("copySpecificConfirm").addEventListener("click", () => {
+  const val = $("copySpecificMonth").value; // "YYYY-MM"
+  if (!val) { showToast("Choisis un mois"); return; }
+  const [y, m] = val.split("-").map(Number);
+  const source = new Date(y, m - 1, 1);
+  if (monthKey(source) === monthKey(currentMonth)) {
+    showToast("Choisis un mois différent du mois affiché");
+    return;
+  }
+  copyEntriesFromMonth(source);
+  $("copySpecificRow").style.display = "none";
 });
 
 $("exportBtn").addEventListener("click", () => {

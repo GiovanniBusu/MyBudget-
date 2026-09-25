@@ -116,6 +116,7 @@
   .txn-main { min-width: 0; }
   .txn-label { font-size: 14.5px; line-height: 1.25; }
   .txn-label.unpaid { color: var(--muted); }
+  .txn-label.paid { color: var(--gold); text-shadow: 0 0 8px var(--glow); font-weight: 600; }
   .txn-cat { font-size: 11px; color: var(--muted); }
   .txn-comment { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 1px; }
   .txn-amount { font-family: 'Share Tech Mono', monospace; font-size: 14.5px; white-space: nowrap; }
@@ -916,7 +917,7 @@ function renderList(elId, list, type) {
     row.innerHTML = `
       <input type="checkbox" ${t.paid ? "checked" : ""} title="Payé / reçu">
       <div class="txn-main">
-        <div class="txn-label ${t.paid ? "" : "unpaid"}">${escapeHtml(t.label)}</div>
+        <div class="txn-label ${t.paid ? "paid" : "unpaid"}">${escapeHtml(t.label)}</div>
         <div class="txn-cat${t.category ? "" : " txn-cat-empty"}">${t.category ? escapeHtml(t.category) : "+ catégorie"}</div>
         ${t.comment ? `<div class="txn-comment">${escapeHtml(t.comment)}</div>` : ""}
       </div>
